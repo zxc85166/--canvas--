@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>高雄全端班 卓冠宏 HTML 5 繪圖 Canvas Api 作業</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      crossorigin="anonymous"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      .RWD {
+        width: 106%;
+        position: relative;
+      }
+      /* canvas RWD */
+      /* 然後canvas看起來變糊了 */
+      .RWD::before {
+        content: "";
+        display: block;
+        width: 100%;
+        padding-bottom: 100%;
+      }
+      .RWD canvas {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+      button,
+      input,
+      optgroup,
+      select,
+      textarea {
+        font-family: "Noto Sans TC", sans-serif;
+      }
+    </style>
+    <script>
+      $(function () {
+        //全部隱藏
+        $('div[id^="tab_"]').hide();
+        $("#slt").change(function () {
+          let sltValue = $(this).val();
+          // console.log(sltValue);
+
+          $('div[id^="tab_"]').hide();
+          //指定顯示
+          $(sltValue).show();
+        });
+      });
+      const personsData = [
+        { name: "陳第一", salesdata: 600 },
+        { name: "陳第二", salesdata: 560 },
+        { name: "陳第三", salesdata: 280 },
+        { name: "陳第四", salesdata: 580 },
+        { name: "陳第五", salesdata: 480 },
+        { name: "陳第六", salesdata: 280 },
+        { name: "陳第七", salesdata: 680 },
+        { name: "陳第八", salesdata: 780 },
+        { name: "陳第九", salesdata: 380 },
+        { name: "陳第十", salesdata: 580 },
+        { name: "陳十一", salesdata: 180 },
+        { name: "陳十二", salesdata: 255 },
+      ];
+
+      var db;
+      var request = indexedDB.open("myIndexedDB", 1);
+
+      request.onerror = function (event) {
+        alert("開啟資料庫發生錯誤");
+      };
+
+      request.onsuccess = function (event) {
+        db = request.result;
+      };
+
+      request.onupgradeneeded = function (event) {
+        var mydb = event.target.result;
+        var objectStore = mydb.createObjectStore("persons", {
+          key: "id",
+          autoIncrement: true,
+        });
+
+        for (var i in personsData) {
+          objectStore.add(personsData[i]);
+        }
+      };
+      var salesname = [];
+      var pieChart = [];
+      var salesDataCords = [];
+      function readData() {
+        var objectStore = db.transaction(["persons"]).objectStore("persons");
+        objectStore.openCursor().onsuccess = function (event) {
+          var cursorResult = event.target.result;
+          if (cursorResult) {
+            salesDataCords.push([cursorResult.value.salesdata]);
+            salesname.push([cursorResult.value.name]);
+            pieChart.push(cursorResult.value);
+            cursorResult.continue();
+          } else {
+            // console.log(salesname);
+            // console.log(salesDataCords);
+            // console.log(personsData);
+            // console.log(pieChart);
+          }
+        };
+        // 啟用畫圖按鈕
+        $("#drawBtn").removeClass("disabled").addClass("btn-outline-info");
+      }
+
+      function writeAllData() {
+        var canvas = document.getElementById("mycanvas");
+        if (canvas.getContext) {
+          var ctx = canvas.getContext("2d");
+          /* 畫座標軸 */
+          ctx.beginPath();
+          ctx.moveTo(100, 100);
+          ctx.lineTo(100, 900);
+          ctx.lineTo(900, 900);
+          ctx.strokeStyle = "#2222FF";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          /* 標註文字、名字 */
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#339933";
+          ctx.fillText("業績(仟)", 50, 95);
+          ctx.fillText("時間", 905, 925);
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#c94b11";
+          for (var i = 0; i < salesname.length; i += 1) {
+            ctx.fillText(salesname[i], 125 + i * 60, 925);
+          }
+
+          /* 標註數據 */
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#ff039e";
+          for (var i = 0; i < salesname.length + 1; i += 1) {
+            ctx.fillText(780 - i * 65, 50, 125 + i * 65);
+          }
+
+          //畫折線圖
+          ctx.beginPath();
+          for (var i = 0; i < salesDataCords.length; i += 1) {
+            if (i == 0) {
+              ctx.moveTo(150, salesDataCords[0]);
+            } else {
+              ctx.lineTo(150 + 60 * i, salesDataCords[i]);
+            }
+            ctx.strokeStyle = "#882222";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+          }
+          // 畫虛線
+          ctx.beginPath();
+          ctx.setLineDash([1, 5]);
+          for (var i = 0; i < salesDataCords.length; i += 1) {
+            ctx.moveTo(150 + 60 * i, salesDataCords[i]);
+            ctx.lineTo(150 + 60 * i, 900);
+          }
+          ctx.strokeStyle = "#f36";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+        var canvas2 = document.getElementById("mycanvas2");
+        if (canvas2.getContext) {
+          var ctx = canvas2.getContext("2d");
+          /* 畫座標軸 */
+          ctx.beginPath();
+          ctx.moveTo(100, 100);
+          ctx.lineTo(100, 900);
+          ctx.lineTo(900, 900);
+          ctx.strokeStyle = "#2222FF";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          /* 標註文字、名字 */
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#339933";
+          ctx.fillText("業績(仟)", 50, 95);
+          ctx.fillText("時間", 905, 925);
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#c94b11";
+          for (var i = 0; i < salesname.length; i += 1) {
+            ctx.fillText(salesname[i], 125 + i * 60, 925);
+          }
+          /* 標註數據 */
+          ctx.font = "12pt 微軟正黑體";
+          ctx.fillStyle = "#ff039e";
+          for (var i = 0; i < salesname.length + 1; i += 1) {
+            ctx.fillText(780 - i * 65, 50, 125 + i * 65);
+          }
+          /* 畫矩形 */
+          var recWidth = 30;
+          ctx.beginPath();
+          ctx.fillStyle = "#70ecec";
+          for (var i = 0; i < salesDataCords.length; i += 1) {
+            ctx.fillRect(
+              150 + 60 * i - 15,
+              900 - salesDataCords[i],
+              recWidth,
+              salesDataCords[i]
+            );
+          }
+          /* 畫矩形外框線 */
+          ctx.strokeStyle = "#5050FF";
+          ctx.lineWidth = 4;
+          for (var i = 0; i < salesDataCords.length; i += 1) {
+            ctx.strokeRect(
+              150 + 60 * i - 15,
+              900 - salesDataCords[i],
+              recWidth,
+              salesDataCords[i]
+            );
+          }
+        }
+        // 矩形各自業績
+        ctx.font = "12pt 微軟正黑體";
+        ctx.fillStyle = "#339933";
+        ctx.fillText("業績(仟)", 50, 95);
+        ctx.fillText("時間", 905, 925);
+        ctx.fillStyle = "#c94b11";
+        for (var i = 0; i < salesDataCords.length; i += 1) {
+          ctx.fillText(
+            salesDataCords[i],
+            135 + i * 60,
+            894 - salesDataCords[i]
+          );
+        }
+        //圓餅圖
+        var canvas3 = document.getElementById("mycanvas3");
+        if (canvas3.getContext) {
+          var ctx = canvas3.getContext("2d");
+          var x = 500,
+            y = 500,
+            r = 300,
+            begin_deg = (-90 * Math.PI) / 180,
+            color = [
+              "green",
+              "yellow",
+              "brown",
+              "tan",
+              "red",
+              "skin",
+              "blue",
+              "pink",
+              "indigo",
+              "black",
+              "purple",
+              "gray",
+            ],
+            total = 0;
+          for (var i = 0; i < pieChart.length; i++) {
+            total += parseInt(pieChart[i].salesdata);
+          }
+          for (var i = 0; i < pieChart.length; i++) {
+            // 計算角度
+            var value_deg =
+              ((pieChart[i].salesdata / total) * 360 * Math.PI) / 180;
+            // 結束角度
+            var end_deg = begin_deg + value_deg;
+
+            // 範圍、填色
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.arc(x, y, r, begin_deg, end_deg);
+            ctx.fillStyle = color[i];
+            ctx.fill();
+
+            // 角度中間值
+            var text_deg = begin_deg + value_deg * 0.5;
+            var text_X = x + (r + 10) * Math.cos(text_deg);
+            var text_Y = y + (r + 10) * Math.sin(text_deg);
+
+            if (
+              text_deg > (90 * Math.PI) / 180 &&
+              text_deg < (250 * Math.PI) / 180
+            ) {
+              ctx.textAlign = "end";
+            } else if (
+              text_deg > (250 * Math.PI) / 180 &&
+              text_deg < (270 * Math.PI) / 180
+            ) {
+              ctx.textAlign = "center";
+            }
+
+            // 填入文字
+            ctx.font = "15px 微軟正黑體";
+            ctx.fillStyle = "#754700";
+            var text = pieChart[i].name + "：" + pieChart[i].salesdata;
+            ctx.fillText(text, text_X, text_Y);
+            begin_deg = end_deg;
+          }
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <h2 class="text-center py-4">銷售業績統計圖表</h2>
+    <!-- <h5 class="text-center" style="color: red">
+      第一次繪圖可能出問題，清除indexedDB 重整即可
+    </h5> -->
+    <div class="d-flex container-fluid justify-content-center">
+      <button class="btn btn-outline-info" onclick="readData()">
+        讀取資料
+      </button>
+      <button
+        id="drawBtn"
+        class="btn btn-outline-secondary disabled"
+        onclick="writeAllData()"
+      >
+        繪成圖
+      </button>
+    </div>
+    <div class="contianer">
+      <div class="offset-3 col-6">
+        <select id="slt" class="form-select RWD">
+          <option>請先選擇後再按button繪圖...</option>
+          <option value="#tab_1">折線圖</option>
+          <option value="#tab_2">長條圖</option>
+          <option value="#tab_3">圓餅圖</option>
+        </select>
+        <!-- <div class="col-3">
+          <p id="displayMessage"></p>
+        </div> -->
+        <div class="A-4 RWD" id="tab_1">
+          <canvas
+            id="mycanvas"
+            width="1000"
+            height="1000"
+            style="border: 3px solid #ff9900"
+          ></canvas>
+        </div>
+        <div class="A-5 RWD" id="tab_2">
+          <canvas
+            id="mycanvas2"
+            width="1000"
+            height="1000"
+            style="border: 3px solid #ff9900"
+          ></canvas>
+        </div>
+        <div class="A-4 RWD" id="tab_3">
+          <canvas
+            id="mycanvas3"
+            width="1000"
+            height="1000"
+            style="border: 3px solid #ff9900"
+          ></canvas>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
